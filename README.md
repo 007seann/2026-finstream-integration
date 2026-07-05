@@ -1,5 +1,3 @@
-# 2026-finstream-integration
-
 # FinStream Pipeline Integration
 
 This repository is the intake point for MSc dissertation data-collection pipelines that will be integrated into **FinStreamAI**, the AIAI lab's real-time heterogeneous financial data infrastructure.
@@ -14,6 +12,21 @@ This repo does **not** contain FinStreamAI's production code. It only holds the 
 4. Build your pipeline there, following the checklist in the PR template.
 5. Open a PR back into this repo's `main` branch.
 
+## Structure
+
+```
+finstream-pipeline-integration/
+├── CONTRIBUTING.md
+├── template/
+│   ├── pipeline/
+│   │   ├── config.example.yaml
+│   │   ├── main.py
+│   │   └── requirements.txt
+│   ├── metadata.yaml
+│   └── README.md
+└── submissions/
+    └── <your-name>/   # created by each student from the template
+```
 
 ## Review & integration
 

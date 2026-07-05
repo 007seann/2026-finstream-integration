@@ -1,0 +1,16 @@
+# Copy this file to config.yaml and fill in real values.
+# config.yaml is gitignored — never commit real credentials.
+
+api:
+  base_url: "https://api.example.com/v1"
+  api_key: "YOUR_API_KEY_HERE"
+
+paths:
+  raw_data_dir: "./data/raw"
+  processed_data_dir: "./data/processed"
+  output_dir: "./data/output"
+
+run:
+  batch_size: 100
+  max_retries: 3
+  checkpoint_file: "./data/.checkpoint.json"

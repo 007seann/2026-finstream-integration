@@ -1,0 +1,90 @@
+name: Pipeline Submission CI
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'submissions/**'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Identify changed submission folder(s)
+        id: changed
+        run: |
+          BASE_SHA=${{ github.event.pull_request.base.sha }}
+          HEAD_SHA=${{ github.event.pull_request.head.sha }}
+          CHANGED=$(git diff --name-only "$BASE_SHA" "$HEAD_SHA" -- submissions/ || true)
+          echo "$CHANGED"
+          echo "changed_files<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$CHANGED" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+      - name: Ensure PR only touches one student's folder
+        run: |
+          FOLDERS=$(echo "${{ steps.changed.outputs.changed_files }}" | awk -F/ '{print $2}' | sort -u | grep -v '^$' || true)
+          COUNT=$(echo "$FOLDERS" | grep -c . || true)
+          echo "Folders touched: $FOLDERS"
+          if [ "$COUNT" -gt 1 ]; then
+            echo "ERROR: PR modifies more than one submissions/<name>/ folder. Please only touch your own folder."
+            exit 1
+          fi
+
+      - name: Check required files exist
+        run: |
+          FOLDER=$(echo "${{ steps.changed.outputs.changed_files }}" | awk -F/ '{print $2}' | sort -u | grep -v '^$' | head -1)
+          if [ -z "$FOLDER" ]; then
+            echo "No submission folder detected, skipping."
+            exit 0
+          fi
+          DIR="submissions/$FOLDER"
+          echo "Checking $DIR"
+          for f in README.md requirements.txt metadata.yaml; do
+            if [ ! -f "$DIR/$f" ]; then
+              echo "ERROR: Missing required file $DIR/$f"
+              exit 1
+            fi
+          done
+
+      - name: Scan for hardcoded local paths
+        run: |
+          FOLDER=$(echo "${{ steps.changed.outputs.changed_files }}" | awk -F/ '{print $2}' | sort -u | grep -v '^$' | head -1)
+          DIR="submissions/$FOLDER"
+          if grep -rEn '(/Users/[A-Za-z0-9_./-]*|/home/[A-Za-z0-9_./-]*|[A-Za-z]:\\\\)' "$DIR" --include=*.py --include=*.yaml --include=*.yml ; then
+            echo "ERROR: Hardcoded local path found. Use config values instead."
+            exit 1
+          else
+            echo "No hardcoded paths found."
+          fi
+
+      - name: Scan for committed secrets (basic)
+        run: |
+          FOLDER=$(echo "${{ steps.changed.outputs.changed_files }}" | awk -F/ '{print $2}' | sort -u | grep -v '^$' | head -1)
+          DIR="submissions/$FOLDER"
+          if find "$DIR" -name ".env" -o -name "*.pem" -o -name "*_key*" | grep -q .; then
+            echo "ERROR: Possible credential file committed."
+            exit 1
+          fi
+          if grep -rEn "(api_key|apikey|secret|token)\s*=\s*['\"][A-Za-z0-9_\-]{15,}['\"]" "$DIR" --include=*.py --include=*.yaml --include=*.yml ; then
+            echo "ERROR: Possible hardcoded secret found."
+            exit 1
+          fi
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.8'
+
+      - name: Install dependencies in a clean venv
+        run: |
+          FOLDER=$(echo "${{ steps.changed.outputs.changed_files }}" | awk -F/ '{print $2}' | sort -u | grep -v '^$' | head -1)
+          DIR="submissions/$FOLDER"
+          python -m venv /tmp/venv
+          source /tmp/venv/bin/activate
+          pip install --upgrade pip
+          pip install -r "$DIR/requirements.txt"

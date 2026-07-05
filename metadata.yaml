@@ -1,0 +1,24 @@
+# Fill in all fields before opening a PR.
+
+data_source:
+  name: ""                # e.g. "SEC EDGAR full-text search"
+  provider: ""             # e.g. "sec.gov"
+  description: ""          # 1-2 sentences on what this dataset contains
+
+api:
+  endpoint: ""             # base URL / endpoint(s) used
+  auth_method: ""          # e.g. "API key in header", "OAuth2", "none"
+  rate_limit: ""           # e.g. "10 requests/second, 10000/day"
+  docs_url: ""             # link to official API docs
+
+output:
+  schema: ""               # describe fields/columns, or link to a schema file
+  format: ""                # e.g. "parquet", "csv", "json"
+  update_frequency: ""      # e.g. "daily", "on new filing", "one-off historical pull"
+
+storage_policy:
+  raw_data_retained: true   # true/false — whether provider terms allow retaining raw data
+  intermediate_data_retained: true
+  final_dataset_location: "" # relative path or storage location description
+
+notes: ""                   # anything else the integration team should know
