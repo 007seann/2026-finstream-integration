@@ -1,0 +1,20 @@
+# Never commit real credentials or local config
+**/config.yaml
+**/.env
+*.pem
+*.key
+
+# Data (raw/intermediate/final) should be documented, not committed, unless explicitly small & permitted
+**/data/raw/
+**/data/processed/
+**/data/output/
+
+# Python
+__pycache__/
+*.pyc
+venv/
+.venv/
+
+# OS/editor
+.DS_Store
+.vscode/
