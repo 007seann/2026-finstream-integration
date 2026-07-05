@@ -17,8 +17,9 @@ output:
   update_frequency: ""      # e.g. "daily", "on new filing", "one-off historical pull"
 
 storage_policy:
-  raw_data_retained: true   # true/false — whether provider terms allow retaining raw data
-  intermediate_data_retained: true
-  final_dataset_location: "" # relative path or storage location description
+  raw_data_location: ""          # where raw data is stored (NOT in this repo) — e.g. "s3://finstream-data/raw/<source>/" or your google driver link
+  intermediate_data_location: ""  # where intermediate data is stored — same rule, not in this repo
+  final_dataset_location: ""      # where the final cleaned dataset is stored
+  access_instructions: ""         # how someone else on the team can access the above (credentials contact, permissions needed, etc.)
 
 notes: ""                   # anything else the integration team should know

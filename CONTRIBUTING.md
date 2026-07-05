@@ -28,14 +28,15 @@ Thanks for contributing your data pipeline for integration into FinStreamAI. Fol
 - Add sufficient logging so failures can be diagnosed easily.
 - Design your pipeline so it can resume gracefully after an interruption, rather than requiring a full re-run.
 
-## 4. Data storage
+## 4. Data storage — do not commit data to this repo
 
-Where the data provider's terms permit it, please retain and document:
-- Raw data
-- Intermediate processed data
-- Final cleaned dataset
+**This repository is for code, configuration, and documentation only. Never commit actual data files (raw, intermediate, or final) to git, even in your own submission folder.** GitHub blocks files over 100MB and this repo is not a data store — the `.gitignore` already excludes common data directories, but please don't try to work around it.
 
-This lets future researchers reproduce results or change preprocessing logic without recollecting data from scratch.
+Instead, where the data provider's terms permit retaining data:
+
+- Store raw data, intermediate processed data, and the final cleaned dataset in the storage location designated for FinStream (ask Sean/Emmad/Sarah if you're not sure where that is — e.g. shared drive, cloud bucket, database -- recommend to share your google driver link with permision to everyone who has a link).
+- Document the storage location and access instructions in `metadata.yaml` under `storage_policy`, so future researchers know where to find the data and can reproduce results or change preprocessing logic without recollecting it from scratch.
+- If a small sample (a few KB, e.g. 50–100 rows) would help reviewers sanity-check your pipeline's output shape, you may include that in your submission folder — but this is optional and only for illustration, not as the actual dataset.
 
 ## 5. Before opening a pull request
 
