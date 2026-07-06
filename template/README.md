@@ -3,17 +3,6 @@
 ## Overview
 Brief description of what this pipeline collects and why.
 
-## Data statistics
-
-## Technical framework design and implementation 
-
-## Updated latest literature summary 
-
-## Evaluation/Benchmark Plan
-
-## Outline thesis structure
-
-
 ## Setup
 ```bash
 python -m venv venv
