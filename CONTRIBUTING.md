@@ -34,8 +34,8 @@ Thanks for contributing your data pipeline for integration into FinStreamAI. Fol
 
 Instead, where the data provider's terms permit retaining data:
 
-- Store raw data, intermediate processed data, and the final cleaned dataset in the storage location designated for FinStream (ask Sean/Emmad/Sarah if you're not sure where that is — e.g. shared drive, cloud bucket, database -- recommend to share your google driver link with permision to everyone who has a link).
-- Document the storage location and access instructions in `metadata.yaml` under `storage_policy`, so future researchers know where to find the data and can reproduce results or change preprocessing logic without recollecting it from scratch.
+- Store raw data, intermediate processed data, and the final cleaned dataset in the your cloud driver - **We recommend using OneDrive**, and share the accessible link.
+- Document the accessible link (please, double check **permision**) and access instructions in `metadata.yaml` under `storage_policy`, so future researchers know where to find the data and can reproduce results or change preprocessing logic without recollecting it from scratch.
 - If a small sample (a few KB, e.g. 50–100 rows) would help reviewers sanity-check your pipeline's output shape, you may include that in your submission folder — but this is optional and only for illustration, not as the actual dataset.
 
 ## 5. Before opening a pull request
