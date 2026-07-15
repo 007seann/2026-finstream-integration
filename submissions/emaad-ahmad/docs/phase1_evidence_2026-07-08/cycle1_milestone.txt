@@ -1,0 +1,17 @@
+Cycle 1 Complete — 8 July 2026, 18:32 UTC
+==========================================
+
+L1 Price:      3,210,795 rows total (12,165 daily + 3,198,630 5-min), 503 tickers
+L1 News:       EODHD 5,603 + GDELT 2,479 = 8,082 articles, 503 tickers covered
+L2 Fusion:     3,210,774 events, 59,584 with news attached (1.86%)
+L2 GDELT-in:   1,982 events across ~90 tickers (Pareto distribution)
+L2 EODHD-in:   57,841 events
+L3 Sentiment:  11,206 records (5,603 each model)
+L3 Agreement:  FinBERT 59.2% vs EODHD | RoBERTa 47.7% vs EODHD | gap 11.5pp
+Cost:          11,579 / 100,000 EODHD credits (11.6%)
+
+Bugs fixed today:
+  - Price DAG XCom OOM (rewrote to insert per-ticker)
+  - Fusion DAG XCom OOM + DEMO_TICKERS bug (rewrote to iterate all 503 with streaming)
+
+DAG status: all 6 latest runs succeeded.

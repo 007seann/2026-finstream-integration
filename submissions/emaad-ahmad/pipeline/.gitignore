@@ -1,0 +1,39 @@
+# Environment
+.env
+api/*.txt
+api/*.key
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# Data (too large for git)
+data/sec/**/*.htm
+data/sec/**/*.txt
+data/sec/**/*.pdf
+data/news/**/*.json
+data/prices/**/*.json
+data/prices/**/*.csv
+data/transcripts/**/*.json
+
+# Docker volumes
+db/pgdata/
+db/mongodata/
+
+# Airflow
+airflow/logs/
+airflow/airflow.db
+logs/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+credentials.txt
+*.credentials
+.env
+*.key
+*.pem

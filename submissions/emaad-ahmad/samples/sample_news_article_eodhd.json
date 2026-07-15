@@ -1,0 +1,21 @@
+{
+  "_comment": "Illustrative shape only — one document from MongoDB news_articles (source=eodhd). Real EODHD content bodies are not redistributable per their ToS; the content field is elided here.",
+  "ticker": "MSFT",
+  "title": "[example headline — real title elided per EODHD ToS]",
+  "content": "[real article body elided]",
+  "published_at": "2026-07-08T14:32:11+00:00",
+  "url": "https://example.com/example-article-url",
+  "symbols_mentioned": ["MSFT", "NVDA"],
+  "tags": ["earnings", "tech"],
+  "eodhd_sentiment": {
+    "polarity":  0.512,
+    "pos":       0.68,
+    "neu":       0.28,
+    "neg":       0.04
+  },
+  "gdelt_tone": null,
+  "gdelt_record_id": null,
+  "dedup_key": "2026-07-08T14:32:11+00:00|[example headline — real title elided per EODH|MSFT",
+  "ingested_at": "2026-07-08T16:59:47.213456+00:00",
+  "source": "eodhd"
+}

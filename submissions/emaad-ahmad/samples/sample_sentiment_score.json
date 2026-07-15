@@ -1,0 +1,21 @@
+{
+  "_comment": "Illustrative shape only — one document from MongoDB sentiment_scores. Content field elided per EODHD ToS.",
+  "ticker":            "MSFT",
+  "source_type":       "news",
+  "source_dedup_key":  "2026-07-07T19:32:00+00:00|[example headline elided per EODHD ToS]|MSFT",
+  "text_scored":       "[example headline elided per EODHD ToS]",
+  "model":             "ProsusAI/finbert",
+  "label":             "positive",
+  "confidence":        0.887,
+  "probabilities":     {"positive": 0.887, "neutral": 0.098, "negative": 0.015},
+  "eodhd_comparison": {
+    "eodhd_polarity":  0.612,
+    "eodhd_pos":       0.71,
+    "eodhd_neu":       0.24,
+    "eodhd_neg":       0.05,
+    "eodhd_label":     "positive",
+    "agreement":       true
+  },
+  "scored_at":         "2026-07-08T18:30:12.114567+00:00",
+  "dedup_key":         "2026-07-07T19:32:00+00:00|[example headline elided per EODHD ToS]|MSFT|ProsusAI/finbert"
+}

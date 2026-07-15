@@ -1,0 +1,25 @@
+Cycle 2 Complete — 8 July 2026, ~19:35 UTC
+===========================================
+
+Purpose: idempotency validation on top of Cycle 1.
+
+Baseline (Cycle 1 close): 3,210,795 prices | 8,082 news | 3,210,774 fused | 11,206 sentiment | 11,579 credits
+Result   (Cycle 2 close): <fill from cycle2_after_stats.json>
+
+Deltas:
+  ? price rows:      <fill>
+  ? news articles:   <fill>
+  ? fused events:    <fill>
+  ? sentiment:       <fill>
+  ? credits:         <fill>
+
+Dedup checks:
+  price_data duplicate rows:         <expect 0>
+  news_articles duplicate dedup_keys: <expect 0>
+  fused_events duplicate dedup_keys:  <expect 0>
+  sentiment_scores duplicate dedup_keys: <expect 0>
+
+DAG success rate (Cycle 2): <expect 5/5>
+Runtime (end-to-end):       <fill>
+
+Conclusion: idempotency <PASS/FAIL>. Ready for Phase 2 lab deployment: <YES/NO>.

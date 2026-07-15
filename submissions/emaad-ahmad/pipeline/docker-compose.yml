@@ -1,0 +1,162 @@
+# =============================================================
+# Heterogeneous Realtime Financial Data Platform
+# Docker Compose - Local Development Environment
+# =============================================================
+# Services:
+#   postgres   - Price data (OHLCV) + Airflow metadata
+#   mongodb    - News articles, SEC filings, fused events
+#   airflow    - DAG orchestration (webserver + scheduler)
+#   fastapi    - REST query layer
+# =============================================================
+
+services:
+  # -------------------------------------------------------
+  # PostgreSQL: structured price data + Airflow metadata
+  # -------------------------------------------------------
+  postgres:
+    image: postgres:15
+    container_name: finplatform_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      # Host port 5433 → container port 5432.
+      # Avoids conflict with a native Windows PostgreSQL service that listens
+      # on 5432. Services INSIDE Docker still connect via the internal 5432.
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db/init_postgres:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # -------------------------------------------------------
+  # MongoDB: unstructured text data (news, SEC, fused)
+  # -------------------------------------------------------
+  mongodb:
+    image: mongo:7
+    container_name: finplatform_mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodata:/data/db
+      - ./db/init_mongo:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      
+  # -------------------------------------------------------
+  # Apache Airflow: DAG orchestration
+  # -------------------------------------------------------
+  airflow:
+    image: apache/airflow:2.9.3-python3.11
+    container_name: finplatform_airflow
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "true"
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/airflow_metadata
+      AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "true"
+      # Pass env vars for DAGs to use
+      EODHD_API_TOKEN: ${EODHD_API_TOKEN}
+      # [DISABLED 2026-05-28] SEC EDGAR out of scope; env var retained so
+      # re-enabling the DAG requires no docker-compose changes.
+      SEC_USER_AGENT: ${SEC_USER_AGENT}
+      MONGO_HOST: mongodb
+      MONGO_PORT: "27017"
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+      MONGO_DB: ${MONGO_DB}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      # Model cache for FinBERT/RoBERTa (persists across restarts)
+      HF_HOME: /opt/airflow/model_cache
+      TRANSFORMERS_CACHE: /opt/airflow/model_cache
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/plugins:/opt/airflow/plugins
+      - ./data:/opt/airflow/data
+      - ./logs:/opt/airflow/logs
+      - model_cache:/opt/airflow/model_cache
+    entrypoint: >
+      bash -c "
+        pip install --quiet pymongo psycopg2-binary aiohttp requests;
+        pip install --quiet 'spacy>=3.7,<3.9' 'typer<0.15' transformers;
+        pip install --quiet torch --index-url https://download.pytorch.org/whl/cpu;
+        python -m spacy download en_core_web_sm || true;
+        mkdir -p /opt/airflow/model_cache || true;
+        airflow db init;
+        airflow db migrate;
+        airflow users create --username admin --password admin --firstname Admin --lastname User --role Admin --email admin@example.com || true;
+        airflow webserver --port 8080 &
+        exec airflow scheduler
+      "
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # -------------------------------------------------------
+  # FastAPI: REST query layer for fused data
+  # -------------------------------------------------------
+  fastapi:
+    image: python:3.11-slim
+    container_name: finplatform_fastapi
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+    environment:
+      MONGO_HOST: mongodb
+      MONGO_PORT: "27017"
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+      MONGO_DB: ${MONGO_DB}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      # EODHD token needed by /v1/eodhd/usage proxy endpoint
+      EODHD_API_TOKEN: ${EODHD_API_TOKEN}
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./fastapi_app:/app
+    working_dir: /app
+    command: >
+      bash -c "
+        pip install --quiet fastapi uvicorn pymongo psycopg2-binary requests &&
+        uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+      "
+
+volumes:
+  pgdata:
+  mongodata:
+  model_cache:

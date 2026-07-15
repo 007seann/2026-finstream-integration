@@ -1,0 +1,15 @@
+{
+  "_comment": "Illustrative shape only — one row from PostgreSQL price_data. Real data is not committed to git per EODHD ToS and template rules.",
+  "id": 3197844,
+  "ticker": "AAPL",
+  "timestamp_ms": 1751993100000,
+  "datetime_utc": "2026-07-07T19:45:00+00:00",
+  "open": 217.42,
+  "high": 217.68,
+  "low": 217.22,
+  "close": 217.55,
+  "volume": 428900,
+  "interval": "5m",
+  "source": "eodhd",
+  "ingested_at": "2026-07-08T18:44:12.831074+00:00"
+}

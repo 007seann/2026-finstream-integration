@@ -1,0 +1,7 @@
+Cycle 1 fusion milestone (2026-07-08 18:21 UTC):
+total_fused_events: 3,210,774
+GDELT_in_fused: 1,982
+EODHD_in_fused: 57,841
+events_with_news: 59,385
+tickers_processed: 503
+runtime: 28m30s
