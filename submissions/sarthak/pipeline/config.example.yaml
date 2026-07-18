@@ -1,0 +1,31 @@
+# Copy this file to config.yaml and adjust values as needed.
+# config.yaml is gitignored — never commit real contact details or local paths.
+
+sec_edgar:
+  # SEC EDGAR's pre-parsed quarterly Form 3/4/5 flat files (bulk data sets).
+  # {year}/{quarter} are substituted by the pipeline, e.g. 2024/1 -> 2024q1_form345.zip
+  url_template: "https://www.sec.gov/files/structureddata/data/insider-transactions-data-sets/{year}q{quarter}_form345.zip"
+  # SEC requires a real, traceable contact in the User-Agent for fair-access
+  # identification (not an API key — there is no authentication for this endpoint).
+  # Replace with FinStreamAI's own contact before running in production.
+  user_agent: "FinStreamAI Contributor <contact@example.com>"
+  request_timeout_sec: 120
+  request_sleep_sec: 0.5
+  max_retries: 3
+
+universe:
+  # CIK/ticker list this pipeline filters insider transactions down to.
+  input_csv: "./universe/sp500_constituents.csv"
+
+paths:
+  output_csv: "./data/output/form4_transactions.csv"
+  checkpoint_file: "./data/.checkpoint.json"
+  log_file: "./logs/form4_pipeline.log"
+
+run:
+  # Inclusive quarter range to collect. SEC publishes a new quarterly file
+  # roughly one quarter after each quarter closes.
+  start_year: 2006
+  start_quarter: 1
+  end_year: 2026
+  end_quarter: 1
