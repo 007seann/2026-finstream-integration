@@ -1,0 +1,77 @@
+# Fill in all fields before opening a PR.
+
+data_source:
+  name: "SEC EDGAR Form 4 Insider Transactions (non-derivative)"
+  provider: "sec.gov"
+  description: >
+    Non-derivative insider-trading transactions (open-market buys/sells,
+    grants, option exercises, tax withholding, etc.) reported on SEC Form 4,
+    sourced from SEC EDGAR's official pre-parsed quarterly bulk data sets and
+    filtered down to a configured universe of issuer CIKs (currently the
+    S&P 500 constituent set used in this dissertation, 656 companies).
+
+api:
+  endpoint: "https://www.sec.gov/files/structureddata/data/insider-transactions-data-sets/{year}q{quarter}_form345.zip"
+  auth_method: >
+    None — this is public bulk data, no API key or login required. SEC's
+    fair-access policy requires a descriptive, traceable contact string in
+    the HTTP User-Agent header (see pipeline/config.example.yaml); this is
+    not a credential and does not need to be kept secret.
+  rate_limit: >
+    No formally published per-endpoint limit for these bulk files; the
+    pipeline self-throttles to a fixed 0.5s sleep between quarterly
+    downloads (configurable via sec_edgar.request_sleep_sec), well under
+    SEC's general ~10 requests/second fair-access guidance.
+  docs_url: "https://www.sec.gov/data-research/sec-markets-data/insider-transactions-data-sets"
+
+output:
+  schema: >
+    One row per non-derivative insider transaction: ticker, issuer_cik,
+    accession_number, owner_name, rptownercik, is_officer, is_director,
+    is_ten_pct_owner, officer_title, transaction_date, transaction_code,
+    acquired_disposed, shares, price_per_share, shares_after_txn,
+    value_after_txn, security_title, ownership_type, form_type, trans_sk,
+    deemed_execution_date, equity_swap_involved, trans_timeliness,
+    nature_of_ownership (24 columns total). A small sample illustrating this
+    shape is included at sample/form4_sample.csv (60 rows).
+  format: "csv"
+  update_frequency: >
+    Quarterly — SEC publishes a new bulk ZIP for each quarter roughly one
+    quarter after it closes. The pipeline's run.start_year/start_quarter and
+    run.end_year/end_quarter (config.yaml) control the collected range;
+    re-running with an extended end date and an existing checkpoint/output
+    only fetches the new quarters.
+
+storage_policy:
+  raw_data_location: >
+    Not separately archived. "Raw" here is SEC EDGAR's own public quarterly
+    bulk ZIP files (see api.endpoint), which SEC hosts indefinitely at a
+    stable URL per quarter — pipeline/main.py reproduces the same raw inputs
+    byte-for-byte by re-running against that endpoint, so there is nothing
+    additional to mirror to shared storage.
+  intermediate_data_location: >
+    Not applicable. pipeline/collect.py and pipeline/postprocess.py process
+    and clean each quarter in a single in-memory pass with no persisted
+    intermediate artifact between collection and the final cleaned CSV.
+  final_dataset_location: "https://uoe-my.sharepoint.com/:f:/g/personal/s2880814_ed_ac_uk/IgBEz8mra08aR5H6GWJaZlBlAeBOaoT_YzUnkeFefQvLAnU?e=HaR1iB"
+  access_instructions: >
+    University of Edinburgh OneDrive/SharePoint folder (FinStreamAI-Form4),
+    containing form4_transactions.csv (~1.67M rows / 645 companies / ~251MB,
+    2006 Q1 - 2026 Q1 collection window). Shared with edit access to Emmad
+    Ahmad, Sean Choi, Sarah Sodagudi, and Prof. Tiejun Ma. If anyone else on
+    the integration team needs access, contact Sarthak Vishnu
+    (s2880814@ed.ac.uk) to be added.
+
+notes: >
+  Only non-derivative transactions (the NONDERIV_TRANS table) are collected;
+  derivative/options transactions are out of scope for now. Owner role flags
+  (is_officer/is_director/is_ten_pct_owner) are derived from the
+  rptowner_relationship string SEC has used across the full 2006-2024
+  range observed while building this pipeline; postprocess.py also handles
+  an older isofficer/isdirector-style boolean-column schema defensively in
+  case SEC reintroduces it for some quarter. A small fraction of rows
+  (~3,000 of 1.67M, ~0.18%) carry a transaction_date slightly outside their
+  filing quarter (mostly late-December filings appearing in the following
+  Q1 bulk file) — this reflects SEC's source data, not a pipeline defect.
+  Current edit-access holders on the OneDrive folder (see storage_policy
+  above): Sean Choi, Emaad Ahmad, Sarah Sodagudi, and Prof. Tiejun Ma.
