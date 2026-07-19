@@ -1,0 +1,51 @@
+# =============================================================
+# Configuration template.
+# Copy to config.yaml and set real values. config.yaml is gitignored.
+#
+# Note: this project is an Airflow-based Docker Compose stack, so the
+# canonical configuration surface is .env (see .env.example next to
+# this file). This YAML is retained to satisfy the template layout and
+# to document optional overrides consumable by scripts under scripts/.
+# =============================================================
+
+api:
+  eodhd:
+    base_url: "https://eodhd.com/api"
+    # Set EODHD_API_TOKEN in .env instead of here (config.yaml is gitignored
+    # but .env is the canonical secrets surface for the Docker stack).
+    api_token: "SET_IN_DOT_ENV"
+    rate_limit: "100000 credits/day (paid tier), 20 credits/day (free tier)"
+
+  gdelt:
+    lastupdate_url: "http://data.gdeltproject.org/gdeltv2/lastupdate.txt"
+    masterfilelist_url: "http://data.gdeltproject.org/gdeltv2/masterfilelist.txt"
+    rate_limit: "none (public 15-minute snapshots)"
+
+  wikipedia:
+    sp500_url: "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
+    rate_limit: "polite scraping, once per week"
+
+paths:
+  # These are container-internal paths (mounted via docker-compose.yml).
+  # Do NOT change without updating docker-compose.yml volume mounts.
+  airflow_dags:    "/opt/airflow/dags"
+  airflow_plugins: "/opt/airflow/plugins"
+  model_cache:     "/opt/airflow/model_cache"
+
+run:
+  batch_size: 16                  # transformer inference batch size (L3)
+  max_retries: 2                  # Airflow default_args.retries
+  sentiment_sla_seconds: 300      # skip stragglers if per-batch time exceeds this
+  entity_relevance_threshold: 0.3 # RQ2 filter cutoff for spurious ticker associations
+
+schedules:
+  # Production cadence proposal (post-Phase 2 lab bring-up).
+  # See ../metadata.yaml for the full production schedule mapping and
+  # docs/ARCHITECTURE.md for the rationale behind each cron.
+  sp500_refresh:            "0 4 * * 1"       # Mon 04:00 UTC
+  eodhd_price_eod:          "0 4 * * 2-6"     # Tue-Sat 04:00 UTC
+  eodhd_intraday:           "*/30 13-20 * * 1-5"
+  eodhd_news:               "0 */3 * * *"
+  gdelt_news:               "*/15 * * * *"
+  temporal_fusion:          "@hourly"
+  sentiment_enrichment:     "30 * * * *"

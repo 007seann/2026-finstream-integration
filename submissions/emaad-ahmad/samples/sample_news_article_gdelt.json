@@ -1,0 +1,24 @@
+{
+  "_comment": "Illustrative shape only — one document from MongoDB news_articles (source=gdelt). GDELT provides metadata only (no body text). Redistribution of GDELT-derived metadata is permitted under GDELT's open licence.",
+  "ticker": "NVDA",
+  "title": "",
+  "content": "",
+  "published_at": "2026-07-08T18:15:00+00:00",
+  "url": "https://reuters.com/example-nvda-story",
+  "publisher": "reuters.com",
+  "symbols_mentioned": ["NVDA"],
+  "tags": ["ECON_INTEREST_RATES", "TRADE"],
+  "gdelt_tone": {
+    "tone_score": 4.13,
+    "positive": 5.72,
+    "negative": 1.59,
+    "polarity": 7.31,
+    "activity_ref_density": 12.4,
+    "word_count": 843
+  },
+  "gdelt_record_id": "20260708181500-1234",
+  "eodhd_sentiment": null,
+  "dedup_key": "gdelt|20260708181500-1234|NVDA",
+  "ingested_at": "2026-07-08T18:30:04.512389+00:00",
+  "source": "gdelt"
+}

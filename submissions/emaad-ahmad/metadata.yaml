@@ -1,0 +1,176 @@
+# =============================================================================
+# FinStreamAI Integration Metadata
+# Submission: emaad-ahmad
+# Pipeline  : Heterogeneous Real-Time Financial Data Management and Integration
+#             for AI/LLM Models (MSc Dissertation, University of Edinburgh,
+#             supervised by Dr Tiejun Ma)
+# =============================================================================
+
+data_source:
+  name: "Heterogeneous three-source real-time financial data platform"
+  provider: "Multiple: EODHD (commercial), GDELT GKG 2.0 (open-data), Wikipedia (S&P 500 constituents)"
+  description: >
+    Three-layer ETL pipeline that ingests intraday OHLCV price bars, ticker-
+    tagged commercial news articles, and open-data event-graph news metadata
+    from public APIs; temporally aligns them via a sliding-window fusion
+    algorithm; and enriches each fused event with dual-transformer sentiment
+    (FinBERT + RoBERTa) cross-validated against EODHD's commercial sentiment
+    and GDELT's V1.5 tone. Serves the enriched corpus via a nine-endpoint
+    FastAPI REST layer.
+
+api:
+  # --- Source 1: EODHD (commercial, paid) ---
+  eodhd:
+    endpoint:
+      - "https://eodhd.com/api/eod/{TICKER}.US       (daily OHLCV)"
+      - "https://eodhd.com/api/intraday/{TICKER}.US  (5m intraday OHLCV)"
+      - "https://eodhd.com/api/news?s={TICKER}.US    (ticker-tagged news)"
+      - "https://eodhd.com/api/user                  (quota metadata)"
+    auth_method: "API token in query string (EODHD_API_TOKEN env var)"
+    rate_limit: >
+      Paid All-In-One yearly plan: 100,000 credits/day.
+      Cost per request: 1 credit (EOD), 5 credits (intraday, news).
+      Free tier: 20 credits/day (~4 ticker lookups).
+    docs_url: "https://eodhd.com/financial-apis/api-reference/"
+    # Cycle 1+2 measured usage (8 July 2026): 17,615 / 100,000 credits (17.6%)
+
+  # --- Source 2: GDELT GKG 2.0 (open-data, free) ---
+  gdelt:
+    endpoint:
+      - "http://data.gdeltproject.org/gdeltv2/lastupdate.txt (live snapshot pointer)"
+      - "http://data.gdeltproject.org/gdeltv2/*.gkg.csv.zip  (15-min GKG snapshots)"
+      - "http://data.gdeltproject.org/gdeltv2/masterfilelist.txt (historical backfill index)"
+    auth_method: "none (public HTTP)"
+    rate_limit: "none advertised; polite: 1 snapshot per 15-min cadence"
+    docs_url: "https://blog.gdeltproject.org/gdelt-2-0-our-global-world-in-realtime/"
+
+  # --- Source 3: Wikipedia (open-data, free) ---
+  wikipedia:
+    endpoint: "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
+    auth_method: "none"
+    rate_limit: "polite scraping; polled weekly by sp500_refresh_pipeline"
+    docs_url: "https://en.wikipedia.org/wiki/Wikipedia:Bot_policy"
+
+output:
+  schema:
+    # Structured price data lives in PostgreSQL 15.
+    postgres_tables:
+      companies:
+        columns:
+          - ticker
+          - company_name
+          - "aka_names (text[] array)"
+          - sector
+          - is_active
+          - last_synced_at
+        primary_key: ticker
+      price_data:
+        columns:
+          - ticker
+          - timestamp_ms
+          - datetime_utc
+          - interval
+          - open
+          - high
+          - low
+          - close
+          - volume
+          - source
+          - ingested_at
+        primary_key: "(ticker, timestamp_ms, interval)"
+        idempotency: "ON CONFLICT DO NOTHING"
+    # Unstructured payloads live in MongoDB 7.
+    mongo_collections:
+      news_articles:
+        fields:
+          - ticker
+          - title
+          - content
+          - published_at
+          - url
+          - source
+          - "symbols_mentioned (array of tickers)"
+          - "tags (array)"
+          - "eodhd_sentiment (object)"
+          - "gdelt_tone (object)"
+          - gdelt_record_id
+          - dedup_key
+          - ingested_at
+        dedup_key: "{published_at}|{title[:100]}|{ticker}   (EODHD)  OR  gdelt|{gkg_id}|{ticker}   (GDELT)"
+      fused_events:
+        fields:
+          - ticker
+          - timestamp_ms
+          - datetime_utc
+          - interval
+          - "price (nested object: open/high/low/close/volume)"
+          - "fusion_window (nested object: lookback_min/lookahead_min)"
+          - news_count
+          - "news_context (array of attached news items)"
+          - dedup_key
+          - ingested_at
+        dedup_key: "{ticker}|{interval}|{timestamp_ms}"
+      sentiment_scores:
+        fields:
+          - ticker
+          - source_type
+          - source_dedup_key
+          - text_scored
+          - model
+          - label
+          - confidence
+          - "eodhd_comparison (nested object)"
+          - scored_at
+          - dedup_key
+        dedup_key: "{source_dedup_key}|{model}"
+
+  format: "PostgreSQL relational tables + MongoDB documents; served as JSON via FastAPI REST"
+
+  update_frequency:
+    # Production cadence proposed for the Azure VM deployment.
+    # See docs/ARCHITECTURE.md for the empirical rationale behind each schedule.
+    sp500_refresh_pipeline:      "0 4 * * 1        (weekly, Mon 04:00 UTC)"
+    eodhd_price_pipeline:        "0 4 * * 2-6      (overnight EOD, Tue-Sat 04:00 UTC)"
+    eodhd_intraday_pipeline:     "*/30 13-20 * * 1-5   (market hours, every 30 min)"
+    eodhd_news_pipeline:         "0 */3 * * *      (every 3 hours, 24/7)"
+    gdelt_news_pipeline:         "*/15 * * * *     (every 15 min, mirrors GDELT publish cadence)"
+    temporal_fusion_pipeline:    "@hourly          (fuses whatever ingestion has landed)"
+    sentiment_enrichment_pipeline: "30 * * * *     (hourly, offset 30 min from fusion)"
+    # Three historical backfill DAGs (paused-on-create) are one-shot only:
+    # eodhd_price_historical_pipeline, eodhd_news_historical_pipeline,
+    # gdelt_historical_pipeline. See docs/ARCHITECTURE.md.
+
+storage_policy:
+  raw_data_location: >
+    Local Docker Compose volumes on the dev machine (pgdata, mongodata).
+    On the Azure VM, expected to live under /data/test-2026/. Nothing raw
+    is committed to this repository.
+  intermediate_data_location: "same as raw (fused_events lives alongside news_articles in MongoDB)"
+  final_dataset_location: >
+    OneDrive share to be provisioned once the core team confirms the
+    integration path on the Azure VM. Link will be added here and
+    communicated to Sean / Sarah / RA team via the PR discussion thread.
+    (Placeholder: <TO BE ADDED after PR review>)
+  access_instructions: >
+    (1) Local reproduction: docker compose up -d, then follow README.md.
+    (2) Azure VM (post-integration): once the core team has deployed the
+        stack, data will be readable via the OneDrive link above and
+        queryable via the FastAPI service running on the VM at the
+        integration team's chosen port. EODHD raw responses remain
+        subject to EODHD's ToS (no third-party redistribution).
+
+notes: |
+  * The 4 "live" DAGs (price, intraday, news, fusion, sentiment) are the
+    production surface. The 3 "historical" DAGs are paused-on-create and
+    intended for one-shot Azure VM invocation to seed a deep-history corpus
+    for research assistants after project handoff.
+  * Idempotency validated 8 July 2026: 6,442,403 records across four dedup
+    surfaces, 0 duplicate keys. See docs/VALIDATION_EVIDENCE.md.
+  * The sentiment DAG requires an initial ~400MB model download (FinBERT +
+    DistilRoBERTa); after the first run these are cached to the
+    `model_cache` Docker volume for millisecond load on subsequent runs.
+  * SEC EDGAR ingestion is disabled in the current iteration (out of scope
+    for the dissertation window); the SEC DAG file is retained for future
+    re-enablement but excluded from this submission's active DAG set.
+  * Contact: s2795901@ed.ac.uk (s2795901) or supervisor Dr Tiejun Ma
+    for integration questions.

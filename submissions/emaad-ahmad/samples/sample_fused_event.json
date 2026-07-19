@@ -1,0 +1,47 @@
+{
+  "_comment": "Illustrative shape only — one document from MongoDB fused_events. Real EODHD content bodies elided per EODHD ToS.",
+  "ticker": "MSFT",
+  "timestamp_ms": 1751993100000,
+  "datetime_utc": "2026-07-07T19:45:00+00:00",
+  "interval": "5m",
+  "price": {
+    "open":   458.12,
+    "high":   458.87,
+    "low":    458.02,
+    "close":  458.63,
+    "volume": 174300
+  },
+  "fusion_window": {
+    "lookback_min": 30,
+    "lookahead_min": 5
+  },
+  "news_count": 2,
+  "news_context": [
+    {
+      "title":            "[example headline elided per EODHD ToS]",
+      "url":              "https://example.com/msft-story-1",
+      "source":           "eodhd",
+      "published_at":     "2026-07-07T19:32:00+00:00",
+      "offset_min":       -13.0,
+      "entity_relevance": 0.8,
+      "match_type":       "title+ner",
+      "eodhd_sentiment":  {"polarity": 0.612, "pos": 0.71, "neu": 0.24, "neg": 0.05},
+      "finbert_sentiment":{"label": "positive", "confidence": 0.887},
+      "roberta_sentiment":{"label": "positive", "confidence": 0.973}
+    },
+    {
+      "title":            "",
+      "url":              "https://reuters.com/example-msft-story",
+      "source":           "gdelt",
+      "published_at":     "2026-07-07T19:45:00+00:00",
+      "offset_min":        0.0,
+      "entity_relevance":  1.0,
+      "match_type":        "gdelt_org_match",
+      "gdelt_tone":       {"tone_score": 3.42, "positive": 4.11, "negative": 0.69, "polarity": 4.80, "word_count": 421},
+      "finbert_sentiment": null,
+      "roberta_sentiment": null
+    }
+  ],
+  "dedup_key":   "MSFT|5m|1751993100000",
+  "ingested_at": "2026-07-08T17:52:44.019283+00:00"
+}
