@@ -55,7 +55,17 @@ def load_env_file(path: str = ".env") -> None:
 def load_config(path: str = "config.yaml", env_path: str = ".env") -> dict:
     """Loads config.yaml (non-secret settings) and merges in secrets from
     .env / the real environment (EODHD_API_TOKEN, POSTGRES_USER,
-    POSTGRES_PASSWORD) -- see .env.example for what's expected."""
+    POSTGRES_PASSWORD) -- see .env.example for what's expected.
+
+    POSTGRES_HOST (optional env var) overrides config.yaml's postgres.host
+    if set -- config.yaml's own value is correct for running `python
+    main.py` directly on the host (postgres.host: "localhost" reaches a
+    Postgres bound to the host machine), but wrong from inside the
+    Airflow container, where "localhost" means the container itself, not
+    the host. docker-compose.yml sets POSTGRES_HOST=host.docker.internal
+    for the containerised run so the SAME config.yaml works for both
+    without editing it back and forth between run modes.
+    """
     load_env_file(env_path)
 
     with open(path, "r") as f:
@@ -64,6 +74,8 @@ def load_config(path: str = "config.yaml", env_path: str = ".env") -> dict:
     config["api"]["api_key"] = os.environ.get("EODHD_API_TOKEN", "")
     config["postgres"]["user"] = os.environ.get("POSTGRES_USER", "")
     config["postgres"]["password"] = os.environ.get("POSTGRES_PASSWORD", "")
+    config["postgres"]["host"] = os.environ.get("POSTGRES_HOST", config["postgres"]["host"])
+    config["mongo"]["host"] = os.environ.get("MONGO_HOST", config["mongo"]["host"])
 
     return config
 

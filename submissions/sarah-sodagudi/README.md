@@ -134,7 +134,7 @@ docker compose ps   # wait for sarah_indicators_airflow to show "healthy" (PySpa
 docker exec sarah_indicators_airflow airflow dags unpause sarah_indicators_pipeline
 docker exec sarah_indicators_airflow airflow dags trigger sarah_indicators_pipeline
 ```
-Airflow UI at `http://localhost:8081` (admin/admin).
+Airflow UI at `http://localhost:8083` (admin/admin).
 
 For a cheap first test, set `vendor.ticker_limit` in `config.yaml` to a small number (e.g. 3) — local computation always runs for every active ticker regardless; only the vendor cross-check step is capped.
 
