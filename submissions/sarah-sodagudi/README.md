@@ -5,12 +5,29 @@ Fetches annual and quarterly fundamentals for every active S&P 500 constituent f
 
 ## Setup
 ```bash
+# macOS / Linux
 python -m venv venv
 source venv/bin/activate
 pip install -r pipeline/requirements.txt
+cp pipeline/.env.example pipeline/.env
 cp pipeline/config.example.yaml pipeline/config.yaml
-# fill in pipeline/config.yaml with your own EODHD API key and Postgres/Mongo
-# connection details (not committed)
+# fill in pipeline/.env with your EODHD API token + Postgres user/password (secrets)
+# fill in pipeline/config.yaml with hosts/ports/paths/params (non-secret)
+# neither file is committed
+```
+
+```powershell
+# Windows (PowerShell)
+python -m venv venv
+venv\Scripts\Activate.ps1
+# if this errors with an execution-policy message, run once:
+#   Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+pip install -r pipeline/requirements.txt
+copy pipeline\.env.example pipeline\.env
+copy pipeline\config.example.yaml pipeline\config.yaml
+# fill in pipeline/.env with your EODHD API token + Postgres user/password (secrets)
+# fill in pipeline/config.yaml with hosts/ports/paths/params (non-secret)
+# neither file is committed
 ```
 
 ## Running the pipeline

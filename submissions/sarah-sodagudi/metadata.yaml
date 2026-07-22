@@ -9,7 +9,7 @@ data_source:
 
 api:
   endpoint: "https://eodhd.com/api/fundamentals/{TICKER}.{EXCHANGE}"
-  auth_method: "API token in query string (api_token param, loaded from config.yaml, never hardcoded)"
+  auth_method: "API token in query string (api_token param, loaded from .env -- see pipeline/.env.example -- never hardcoded)"
   rate_limit: >
     Confirmed empirically against the live account usage endpoint: 10 API
     requests per call (not the usual 1/call weight) -- the whole

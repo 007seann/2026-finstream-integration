@@ -2,7 +2,8 @@
 Fundamental data pipeline: EODHD -> MongoDB.
 
 Follows the patterns required by the integration guidelines:
-- config loaded from a separate YAML file (not hardcoded)
+- config loaded from separate files, not hardcoded -- secrets in .env,
+  everything else (hosts, ports, paths, retry/batch params) in config.yaml
 - logging for diagnosability
 - checkpoint-based resume after interruption
 
@@ -29,9 +30,42 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def load_config(path: str = "config.yaml") -> dict:
+def load_env_file(path: str = ".env") -> None:
+    """
+    Minimal .env parser (KEY=VALUE per line, '#' comments and blank lines
+    skipped) -- deliberately no python-dotenv dependency, this repo's
+    pinned-stack policy requires justifying any new library before adding
+    it, and a few lines of stdlib parsing covers what's needed here.
+    Existing real environment variables always take precedence over the
+    file (os.environ.setdefault, not direct assignment) -- e.g. CI or a
+    production scheduler injecting EODHD_API_TOKEN directly still wins
+    over anything committed to .env.example / left in a local .env.
+    """
+    if not os.path.exists(path):
+        return
     with open(path, "r") as f:
-        return yaml.safe_load(f)
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, _, value = line.partition("=")
+            os.environ.setdefault(key.strip(), value.strip().strip('"').strip("'"))
+
+
+def load_config(path: str = "config.yaml", env_path: str = ".env") -> dict:
+    """Loads config.yaml (non-secret settings) and merges in secrets from
+    .env / the real environment (EODHD_API_TOKEN, POSTGRES_USER,
+    POSTGRES_PASSWORD) -- see .env.example for what's expected."""
+    load_env_file(env_path)
+
+    with open(path, "r") as f:
+        config = yaml.safe_load(f)
+
+    config["api"]["api_key"] = os.environ.get("EODHD_API_TOKEN", "")
+    config["postgres"]["user"] = os.environ.get("POSTGRES_USER", "")
+    config["postgres"]["password"] = os.environ.get("POSTGRES_PASSWORD", "")
+
+    return config
 
 
 def load_checkpoint(checkpoint_file: str) -> dict:

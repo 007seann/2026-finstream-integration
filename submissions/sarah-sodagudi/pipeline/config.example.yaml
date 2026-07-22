@@ -1,25 +1,27 @@
 # Copy this file to config.yaml and fill in real values.
 # config.yaml is gitignored -- never commit real credentials.
+# Secrets (API token, DB password) do NOT go here -- see .env.example.
 
 api:
   base_url: "https://eodhd.com/api/fundamentals"
-  api_key: "YOUR_EODHD_API_TOKEN_HERE"
   max_retries: 5
   backoff_seconds: 2
   http_timeout_seconds: 30
 
 # Read-only connection to the shared PostgreSQL instance that hosts the
 # `companies` table (primary source of the active S&P 500 ticker
-# universe). This pipeline never writes to this database.
+# universe). This pipeline never writes to this database. Credentials
+# (user/password) come from .env, not here.
 postgres:
   host: "localhost"
-  port: 5432
-  user: "YOUR_POSTGRES_USER_HERE"
-  password: "YOUR_POSTGRES_PASSWORD_HERE"
+  port: 5433
   database: "financial_data"
   companies_table: "companies"
 
-# Where fundamentals get written.
+# Where fundamentals get written. No auth configured here since the
+# target MongoDB instance runs without auth in local/dev use -- add
+# user/password fields (sourced from .env, same pattern as postgres)
+# if your target instance requires it.
 mongo:
   host: "localhost"
   port: 27017
