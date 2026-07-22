@@ -150,7 +150,7 @@ def main():
     try:
         raw_data = collect(config, checkpoint)
         processed_data = process(raw_data)
-        save(processed_data, config)
+        totals = save(processed_data, config)
     except Exception:
         logger.exception("Pipeline failed -- checkpoint preserved for resume")
         raise
@@ -161,6 +161,7 @@ def main():
         # filings, not skipped forever once done once).
         save_checkpoint(config["paths"]["checkpoint_file"], {"completed_tickers": []})
         logger.info("Pipeline completed successfully")
+        return totals
 
 
 if __name__ == "__main__":
