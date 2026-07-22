@@ -1,0 +1,60 @@
+data_source:
+  name: "EODHD Fundamental Data API"
+  provider: "eodhd.com"
+  description: >
+    Annual and quarterly fundamental statements (Income Statement, Balance
+    Sheet, Cash Flow, plus reported EPS) for every active S&P 500
+    constituent. Every numeric field EODHD reports per fiscal period is
+    captured -- not a fixed taxonomy -- so nothing is silently discarded.
+
+api:
+  endpoint: "https://eodhd.com/api/fundamentals/{TICKER}.{EXCHANGE}"
+  auth_method: "API token in query string (api_token param, loaded from config.yaml, never hardcoded)"
+  rate_limit: >
+    Confirmed empirically against the live account usage endpoint: 10 API
+    requests per call (not the usual 1/call weight) -- the whole
+    fundamentals document (all annual + quarterly periods) comes back in
+    a single request, so the true cost is a flat 10 requests/ticker
+    regardless of how many fiscal periods are returned. On a 100,000
+    requests/day shared plan, the full ~677-ticker constituents universe
+    costs ~6,770 requests (~6.8% of one day's quota).
+  docs_url: "https://eodhd.com/financial-apis/api-reference/"
+
+output:
+  schema: >
+    MongoDB documents: {ticker, exchange, year, quarter (null for annual),
+    publish_date, report_type ("10-K"|"10-Q"),
+    metrics: {income_<field>, balance_<field>, cashflow_<field>, eps_actual, ...},
+    metadata: {source, processed_at}}. See samples/sample_annual_fundamental.json.
+  format: "MongoDB documents (financial_db)"
+  update_frequency: >
+    Run manually / on a periodic schedule (not yet wired to a fixed
+    cadence, pending confirmation). Each run re-fetches the full active
+    ticker universe and upserts -- EODHD updates statements as new
+    filings are published, so re-running naturally picks up new data
+    without any special "check for updates" logic needed.
+
+storage_policy:
+  raw_data_location: "MongoDB financial_db (local Docker volume / native local Mongo during development) -- not committed to this repo"
+  intermediate_data_location: "n/a -- no intermediate persistence, raw EODHD JSON is transformed in-memory and written directly"
+  final_dataset_location: "Same MongoDB financial_db -- annual_fundamental / quarter_fundamental collections"
+  access_instructions: >
+    Local reproduction: see README.md Setup section. Production access:
+    same MongoDB instance the wider FinStreamAI platform reads from --
+    contact the core team for connection details. EODHD raw responses
+    are subject to EODHD's ToS (no third-party redistribution); derived
+    aggregates are unrestricted.
+
+notes: >
+  Ticker universe: primarily the shared PostgreSQL `companies` table
+  (WHERE is_active = TRUE), with a local CSV(sp500_union_constituents.csv) as fallback if that table is
+  unreachable or empty -- see pipeline/ticker_universe.py. Idempotency:
+  upserts keyed on (ticker, year, report_type) for annual and
+  (ticker, year, quarter, report_type) for quarterly -- re-running never
+  duplicates a record. Resumability: a JSON checkpoint tracks which
+  tickers have been fetched in the current run (saved after each ticker,
+  not just at the end), so an interruption only costs the one ticker in
+  flight, not the whole batch -- this matters because each ticker is a
+  real, paid API call, not a free retry. The checkpoint resets after a
+  fully successful run, since this is a periodic refresh pipeline, not a
+  one-shot backfill.
